@@ -70,7 +70,7 @@ function updater () {
     if (( $whileCounter < 10 ))
     then
       sleep $whileCounter
-      whileCounter++
+      ((whileCounter++))
     else
       1>&2 echo "Unfortunately it wasn't possible to stop the Libki Server service."
       1>&2 echo "Please shut it down manually with 'service libki stop' and try again."
@@ -247,6 +247,7 @@ function updater () {
   cp /home/libki/libki-server/script/utilities/restore.sh /usr/local/bin/libki-restore
   cp /home/libki/libki-server/script/utilities/translate.sh /usr/local/bin/libki-translate
   cp /home/libki/libki-server/script/utilities/update.sh /usr/local/bin/libki-update
+  cp /home/libki/libki-server/script/utilities/setup-wizard.sh /usr/local/bin/libki-setup
 }
 
 ##### PROGRAM #####

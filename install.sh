@@ -10,6 +10,7 @@ is_debian_bullseye=false
 is_debian_buster=false
 is_ubuntu_bionic=false
 is_ubuntu_focal=false
+is_ubuntu_jammy=false
 
 if [ -e /etc/os-release ]; then
   source /etc/os-release
@@ -43,6 +44,12 @@ if [ -e /etc/os-release ]; then
       exit 1
       ;;
   esac
+fi
+
+# The installer creates the 'libki' user and fails half-way if it already exists
+if id libki >/dev/null 2>&1; then
+  echo "ERROR: A user named 'libki' already exists. Remove it or install manually." >&2
+  exit 1
 fi
 
 # Update and install packages
@@ -202,7 +209,6 @@ select PROXYANSWER in "Yes" "No"; do
 
       sed -i "s/3000/$PREFERREDPORT/g" /etc/init.d/libki
 
-      update-rc.d libki defaults
 
       # Get ip address from hostname
       hostname=$(hostname -I)
@@ -221,6 +227,9 @@ select PROXYANSWER in "Yes" "No"; do
   esac
   break
 done < /dev/tty
+
+# Start Libki at boot, whichever way it is reached
+update-rc.d libki defaults
 
 # Starting the Libki service
 service libki start
@@ -246,6 +255,7 @@ cp script/utilities/backup.sh /usr/local/bin/libki-backup
 cp script/utilities/restore.sh /usr/local/bin/libki-restore
 cp script/utilities/translate.sh /usr/local/bin/libki-translate
 cp script/utilities/update.sh /usr/local/bin/libki-update
+cp script/utilities/setup-wizard.sh /usr/local/bin/libki-setup
 
 # Report all settings
 echo

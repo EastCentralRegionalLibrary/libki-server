@@ -313,19 +313,20 @@ sub authenticate_via_sip {
             }
         }
 
-        # If the fee limit is a SIP2 field, use that field as the fee limit
-        if ( my $fee_limit = $config->{SIP}->{fee_limit} ) {
-            $fee_limit = $sip_fields->{$fee_limit}
-              if ( $fee_limit =~ /[A-Z][A-Z]/ );
+    }
 
-            if ( $sip_fields->{BV} > $fee_limit ) {
-                return {
-                    success => 0,
-                    error   => 'FEE_LIMIT',
-                    details => { fee_limit => $fee_limit },
-                    user    => $user
-                };
-            }
+    # If the fee limit is a SIP2 field, use that field as the fee limit
+    if ( my $fee_limit = $config->{SIP}->{fee_limit} ) {
+        $fee_limit = $sip_fields->{$fee_limit}
+          if ( $fee_limit =~ /[A-Z][A-Z]/ );
+
+        if ( $sip_fields->{BV} > $fee_limit ) {
+            return {
+                success => 0,
+                error   => 'FEE_LIMIT',
+                details => { fee_limit => $fee_limit },
+                user    => $user
+            };
         }
     }
 

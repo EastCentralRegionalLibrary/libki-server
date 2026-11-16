@@ -1,24 +1,29 @@
 #############################################
 # Instructions:
-# 
-# create a .env file in the same directory as this file with the following content:
 #
-# LIBKI_ADMIN_USERNAME=your_admin_username
+# Easiest: run ../script/utilities/setup-wizard.sh and choose "Docker".
+# It writes docker/.env for you with generated passwords.
+#
+# Or create a .env file in the same directory as this file with:
+#
+# LIBKI_ADMIN_USERNAME=your_admin_username   (creates/updates a superadmin on every start)
 # LIBKI_ADMIN_PASSWORD=your_admin_password
-# LIBKI_INSTANCE=your instance name (defaults to '')
+# LIBKI_INSTANCE=instance name (defaults to '', the single-instance default)
 # LIBKI_TZ=timezone (defaults to 'America/New_York')
 # LIBKI_PORT=port on your localhost (defaults to 3000)
 # LIBKI_MAX_WORKERS=number of workers (defaults to 4)
+# LIBKI_SESSION_TIMEOUT=login session lifetime in seconds (defaults to 3600)
 # DB_NAME=your_db_name (defaults to 'libki')
 # DB_USER=your_db_user (defaults to 'libki')
 # DB_PASS=your_db_pass
 # DB_ROOT_PASS=your_db_root_pass
-# 
+#
 # then run the following command:
-# 
+#
 # docker compose up -d
 # (you can remove '-d' to debug output interactively)
 #############################################
+
 version: "3.9"
 
 services:
@@ -60,7 +65,11 @@ services:
 #            && service cron start \
 #            && plackup -s Gazelle --port 3000 --max-reqs-per-child 50000 --max-workers ${LIBKI_MAX_WORKERS:-4} -E production -a /app/libki.psgi
     environment: # see https://manual.libki.org/master/libki-manual.html#_docker
-      - LIBKI_INSTANCE=${LIBKI_INSTANCE:-libki}
+      - LIBKI_INSTANCE=${LIBKI_INSTANCE:-}
+      - LIBKI_ADMIN_USERNAME=${LIBKI_ADMIN_USERNAME:-}
+      - LIBKI_ADMIN_PASSWORD=${LIBKI_ADMIN_PASSWORD:-}
+      - LIBKI_SERVER_PORT=3000
+      - LIBKI_MAX_WORKERS=${LIBKI_MAX_WORKERS:-4}
       - LIBKI_DB_DSN=dbi:mysql:${DB_NAME:-libki};host=db;port=3306
       - LIBKI_DB_USER=${DB_USER:-libki}
       - LIBKI_DB_PASSWORD=${DB_PASS}

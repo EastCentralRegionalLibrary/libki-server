@@ -86,7 +86,7 @@ __PACKAGE__->config(
 
 my $metrics_dir
     = $ENV{LIBKI_PROM_DIR} ? $ENV{LIBKI_PROM_DIR}
-    : $ENV{INSTANCE}       ? "/dev/libki_metrics/$ENV{INSTANCE}"
+    : $ENV{LIBKI_INSTANCE} ? "/dev/libki_metrics/$ENV{LIBKI_INSTANCE}"
     :                        '/dev/libki_metrics';
 mkdir($metrics_dir); # /dev is a ram disk, use for storing prom metrics
 __PACKAGE__->config('Plugin::PrometheusTiny' => {
