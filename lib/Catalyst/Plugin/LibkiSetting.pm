@@ -215,41 +215,40 @@ sub get_rules {
 
 =head2 get_rule
 
-Returns a rule value or undef if no matching rule is found
+Returns the value of rule C<rule> from the first AdvancedRules entry that
+defines it (any defined value, including 0) and whose criteria all match, or
+undef if there is none.
+
+A criterion listed in a rule (user_category, client_location, client_name,
+client_type) only matches when the caller supplies a value for it and that
+value equals the criterion, or is one of its list values. A rule without a
+criterion ignores it.
 
 =cut
 
 sub get_rule {
     my ( $c, $params ) = @_;
 
-    my $instance = $params->{instance};
     my $rule_name = $params->{rule};
-
     return undef unless $rule_name;
 
-    my $rules = $c->get_rules( $instance );
+    my $rules = $c->get_rules( $params->{instance} );
     return undef unless $rules;
 
     RULE:
     foreach my $rule ( @$rules ) {
-        next if !$rule->{rules}->{$rule_name}; # If this rule doesn't specify this particular 'subrule', just skip it
+        # A rule that doesn't define this particular 'subrule' is skipped
+        next unless defined $rule->{rules}->{$rule_name};
 
+        my $criteria = $rule->{criteria} || {};
         foreach my $r ( qw{ user_category client_location client_name client_type } ) {
-            my $criteria_is_used = $params->{$r} && 1;
-            my $criteria = $rule->{criteria}->{$r};
-            my $rule_has_criteria = exists $rule->{criteria}->{$r};
-            my $criteria_is_list = ref $criteria eq 'ARRAY';
+            next unless exists $criteria->{$r};
 
-            my $rule_matches_criteria;
-            if ( $criteria_is_list ) {
-                $rule_matches_criteria = any { $_ eq $params->{$r} } @$criteria;
-            }
-            else {
-                $rule_matches_criteria = $rule->{criteria}->{$r} eq $params->{$r} if ( $params->{$r} && $rule->{criteria}->{$r} );
-            }
+            my $have = $params->{$r};
+            next RULE unless defined $have && length $have;
 
-            my $skip_rule = $criteria_is_used && $rule_has_criteria && !$rule_matches_criteria;
-            next RULE if $skip_rule;
+            my @wanted = ref $criteria->{$r} eq 'ARRAY' ? @{ $criteria->{$r} } : ( $criteria->{$r} );
+            next RULE unless any { defined $_ && $_ eq $have } @wanted;
         }
 
         return $rule->{rules}->{$rule_name};
