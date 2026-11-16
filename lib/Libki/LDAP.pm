@@ -24,13 +24,20 @@ sub authenticate_via_ldap {
     my $require_ldap_auth = $config->{LDAP}->{require_ldap_auth}
       // 1;    # Default to requiring authentication if setting doesn't exist
 
+    # TLS options: verify = none (default, as before) | optional | require
+    my $ldap_opts = {
+        verify => $config->{LDAP}->{verify},
+        cafile => $config->{LDAP}->{cafile},
+        capath => $config->{LDAP}->{capath},
+    };
+
     my $data;
     my $patron_status_request;
 
 
     if ($require_ldap_auth) {
 
-	my $userdn = testGuid( $username, $password, $adminDn, $adminPwd, $searchBase, $host, $port, $ldaps, $match_attribute );
+	my $userdn = testGuid( $username, $password, $adminDn, $adminPwd, $searchBase, $host, $port, $ldaps, $match_attribute, $ldap_opts );
 
         if ( $userdn ) {
     		#$log->debug("userdn: $userdn");
@@ -70,6 +77,34 @@ sub authenticate_via_ldap {
 
 }
 
+=head2 _new_ldap
+
+Opens the LDAP(S) connection. C<$port> is used when C<$host> is a plain host
+name (a port in an C<ldap://> URL wins). C<$opts> may hold C<verify>
+(none, optional or require; default none), C<cafile> and C<capath>.
+
+=cut
+
+sub _new_ldap {
+    my ( $host, $port, $ldaps, $opts ) = @_;
+    $opts ||= {};
+
+    my $verify = $opts->{verify} || 'none';
+    die "Invalid LDAP verify setting '$verify' (use none, optional or require)"
+      unless $verify =~ /^(?:none|optional|require)$/;
+
+    my %args = ( verify => $verify );
+    $args{port}   = $port           if $port;
+    $args{cafile} = $opts->{cafile} if $opts->{cafile};
+    $args{capath} = $opts->{capath} if $opts->{capath};
+
+    my $class = $ldaps ? 'Net::LDAPS' : 'Net::LDAP';
+    ( my $file = "$class.pm" ) =~ s{::}{/}g;
+    require $file;
+
+    return $class->new( $host, %args ) || die "$@";
+}
+
 =head2 getUserDn
 
 =cut
@@ -87,14 +122,11 @@ sub getUserDn {
     my $port = shift;
     my $ldaps = shift;
     my $match_attribute = shift;
+    my $ldap_opts = shift;
 
     my $filter = $match_attribute . '=' . $guid;
 
-    if ($ldaps) {
-        $ldap = Net::LDAPS->new($host, verify=>'none') or die "$@";
-    } else {
-        $ldap = Net::LDAP->new($host, verify=>'none') or die "$@";    
-    }
+    $ldap = _new_ldap( $host, $port, $ldaps, $ldap_opts );
     
     my $mesg = $ldap->bind ($adminDn, password=>"$adminPwd");
     
@@ -132,16 +164,11 @@ sub testGuid {
     my $port = shift;
     my $ldaps = shift;
     my $match_attribute = shift;
+    my $ldap_opts = shift;
 
-    if ($ldaps) {
-        require Net::LDAPS;
-        $ldap = Net::LDAPS->new($host, verify=>'none') or die "$@";
-    } else {
-        require Net::LDAP;
-        $ldap = Net::LDAP->new($host, verify=>'none') or die "$@";    
-    }
+    $ldap = _new_ldap( $host, $port, $ldaps, $ldap_opts );
 
-    my $userDn = getUserDn($guid, $adminDn, $adminPwd, $searchBase, $host, $port, $ldaps, $match_attribute );
+    my $userDn = getUserDn($guid, $adminDn, $adminPwd, $searchBase, $host, $port, $ldaps, $match_attribute, $ldap_opts );
 
     return undef unless $userDn;
     
