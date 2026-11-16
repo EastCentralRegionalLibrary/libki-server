@@ -258,24 +258,24 @@ sub authenticate_via_sip {
     my $sip_fields = sip_message_to_hashref( $c, $data, $config );
     $log->debug( "SIP FIELDS: " . Data::Dumper::Dumper($sip_fields) );
 
-    my $birthdate_field = $c->config->{SIP}->{birthdate_field} || 'PB';
+    my $birthdate_field = $config->{SIP}->{birthdate_field} || 'PB';
     my $birthdate       = $sip_fields->{$birthdate_field}      || undef;
     $birthdate = ( join( '-', unpack( "A4A2A2", $birthdate ) ) )
         if $birthdate;
 
     my ( $lastname, $firstname );
-    unless ( $c->config->{SIP}->{skip_import_personal_name} ) {
+    unless ( $config->{SIP}->{skip_import_personal_name} ) {
         ( $lastname, $firstname )
-            = split( $c->config->{SIP}->{pattern_personal_name}, $sip_fields->{AE} );
+            = split( $config->{SIP}->{pattern_personal_name}, $sip_fields->{AE} );
 
         $lastname  =~ s/^\s+//;
         $firstname =~ s/^\s+//;
 
         ( $lastname, $firstname ) = ( $firstname, $lastname )
-            if $c->config->{SIP}->{pattern_personal_name_reverse};
+            if $config->{SIP}->{pattern_personal_name_reverse};
     }
 
-    my $category = $sip_fields->{ $c->config->{SIP}->{category_field} };
+    my $category = $sip_fields->{ $config->{SIP}->{category_field} };
     $c->add_user_category($category) if $category;
 
     if ($user) {    ## User authenticated and exists in Libki
