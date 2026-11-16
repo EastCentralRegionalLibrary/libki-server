@@ -79,7 +79,9 @@ services:
       - LIBKI_TZ=${LIBKI_TZ:-America/New_York}
       - LIBKI_SESSION_TIMEOUT=${LIBKI_SESSION_TIMEOUT:-3600}
     ports:
-      - "${LIBKI_PORT:-3000}:3000"
+      # Loopback only: put nginx (see script/utilities/setup-wizard.sh) or another
+      # TLS reverse proxy in front. Never publish this port on all interfaces.
+      - "127.0.0.1:${LIBKI_PORT:-3000}:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -100,8 +102,7 @@ services:
       - TZ=${LIBKI_TZ:-America/New_York}
     volumes:
       - db_data:/var/lib/mysql
-    ports:
-      - "3306:3306" # you can remove this if you don't need to access MySQL directly from the host; the libki container will still be able to access it
+    # The database is deliberately not published. For a shell: docker compose exec db mariadb -u root -p
     healthcheck: # wait for MariaDB to be ready before starting Libki
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 30s
